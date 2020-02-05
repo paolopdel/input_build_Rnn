@@ -1,0 +1,175 @@
+import torch
+from torch import nn
+import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline
+#****************************************************
+seq_length = 20
+time_steps = np.linspace(0, np.pi, seq_length)
+data1 = np.sin(time_steps)
+data2 = np.sin(time_steps)*2
+#*****************************************************
+print(data1)
+print(data2)
+
+[0.00000000e+00 1.64594590e-01 3.24699469e-01 4.75947393e-01
+ 6.14212713e-01 7.35723911e-01 8.37166478e-01 9.15773327e-01
+ 9.69400266e-01 9.96584493e-01 9.96584493e-01 9.69400266e-01
+ 9.15773327e-01 8.37166478e-01 7.35723911e-01 6.14212713e-01
+ 4.75947393e-01 3.24699469e-01 1.64594590e-01 1.22464680e-16]
+[0.00000000e+00 3.29189181e-01 6.49398938e-01 9.51894786e-01
+ 1.22842543e+00 1.47144782e+00 1.67433296e+00 1.83154665e+00
+ 1.93880053e+00 1.99316899e+00 1.99316899e+00 1.93880053e+00
+ 1.83154665e+00 1.67433296e+00 1.47144782e+00 1.22842543e+00
+ 9.51894786e-01 6.49398938e-01 3.29189181e-01 2.44929360e-16]
+
+
+m=np.zeros((20,2), dtype=float)
+i=0
+for j in range(20):
+        m[j][i]=data1[j]
+        
+k=1
+for j in range(20):
+        m[j][k]=data2[j]
+        
+        
+print(m)
+
+[[0.00000000e+00 0.00000000e+00]
+ [1.64594590e-01 3.29189181e-01]
+ [3.24699469e-01 6.49398938e-01]
+ [4.75947393e-01 9.51894786e-01]
+ [6.14212713e-01 1.22842543e+00]
+ [7.35723911e-01 1.47144782e+00]
+ [8.37166478e-01 1.67433296e+00]
+ [9.15773327e-01 1.83154665e+00]
+ [9.69400266e-01 1.93880053e+00]
+ [9.96584493e-01 1.99316899e+00]
+ [9.96584493e-01 1.99316899e+00]
+ [9.69400266e-01 1.93880053e+00]
+ [9.15773327e-01 1.83154665e+00]
+ [8.37166478e-01 1.67433296e+00]
+ [7.35723911e-01 1.47144782e+00]
+ [6.14212713e-01 1.22842543e+00]
+ [4.75947393e-01 9.51894786e-01]
+ [3.24699469e-01 6.49398938e-01]
+ [1.64594590e-01 3.29189181e-01]
+ [1.22464680e-16 2.44929360e-16]]
+        
+m.resize((10, 2))
+print(m)  
+
+[[0.         0.        ]
+ [0.16459459 0.32918918]
+ [0.32469947 0.64939894]
+ [0.47594739 0.95189479]
+ [0.61421271 1.22842543]
+ [0.73572391 1.47144782]
+ [0.83716648 1.67433296]
+ [0.91577333 1.83154665]
+ [0.96940027 1.93880053]
+ [0.99658449 1.99316899]]
+
+#************************************************************
+class RNN(nn.Module):
+    def __init__(self, input_size, output_size, hidden_dim, n_layers):
+        super(RNN, self).__init__()
+        
+        self.hidden_dim=hidden_dim
+
+        # define an RNN with specified parameters
+        # batch_first means that the first dim of the input and output will be the batch_size
+        self.rnn = nn.RNN(input_size, hidden_dim, n_layers, batch_first=True)
+        
+        # last, fully-connected layer
+        self.fc = nn.Linear(hidden_dim, output_size)
+
+    def forward(self, x, hidden):
+        # x (batch_size, seq_length, input_size)
+        # hidden (n_layers, batch_size, hidden_dim)
+        # r_out (batch_size, time_step, hidden_size)
+        batch_size = x.size(0)
+        
+        # get RNN outputs
+        r_out, hidden = self.rnn(x, hidden)
+        # shape output to be (batch_size*seq_length, hidden_dim)
+        r_out = r_out.view(-1, self.hidden_dim)  
+        
+        # get final output 
+        output = self.fc(r_out)
+        
+        return output, hidden
+        
+     #************************************************************************   
+        
+        
+ # test that dimensions are as expected
+test_rnn = RNN(input_size=2, output_size=1, hidden_dim=10, n_layers=2)
+
+# generate evenly spaced, test data pts
+time_steps = np.linspace(0, np.pi, seq_length)
+data= np.sin(time_steps)
+
+#print(data)
+#data.resize((seq_length, 1))
+m.resize((seq_length, 2))
+
+#print(data)
+print(m)
+#est_input = torch.Tensor(data).unsqueeze(0) # give it a batch_size of 1 as first dimension
+test_input = torch.Tensor(m).unsqueeze(0)
+print(test_input)
+print('Input size: ', test_input.size())
+#print(test_input)
+# test out rnn sizes
+test_out, test_h = test_rnn(test_input, None)
+print('Output size: ', test_out.size())
+print('Hidden state size: ', test_h.size())
+#print(test_out)
+#print(test_h)
+
+
+[[0.00000000e+00 0.00000000e+00]
+ [1.64594590e-01 3.29189181e-01]
+ [3.24699469e-01 6.49398938e-01]
+ [4.75947393e-01 9.51894786e-01]
+ [6.14212713e-01 1.22842543e+00]
+ [7.35723911e-01 1.47144782e+00]
+ [8.37166478e-01 1.67433296e+00]
+ [9.15773327e-01 1.83154665e+00]
+ [9.69400266e-01 1.93880053e+00]
+ [9.96584493e-01 1.99316899e+00]
+ [9.96584493e-01 1.99316899e+00]
+ [9.69400266e-01 1.93880053e+00]
+ [9.15773327e-01 1.83154665e+00]
+ [8.37166478e-01 1.67433296e+00]
+ [7.35723911e-01 1.47144782e+00]
+ [6.14212713e-01 1.22842543e+00]
+ [4.75947393e-01 9.51894786e-01]
+ [3.24699469e-01 6.49398938e-01]
+ [1.64594590e-01 3.29189181e-01]
+ [1.22464680e-16 2.44929360e-16]]
+tensor([[[0.0000e+00, 0.0000e+00],
+         [1.6459e-01, 3.2919e-01],
+         [3.2470e-01, 6.4940e-01],
+         [4.7595e-01, 9.5189e-01],
+         [6.1421e-01, 1.2284e+00],
+         [7.3572e-01, 1.4714e+00],
+         [8.3717e-01, 1.6743e+00],
+         [9.1577e-01, 1.8315e+00],
+         [9.6940e-01, 1.9388e+00],
+         [9.9658e-01, 1.9932e+00],
+         [9.9658e-01, 1.9932e+00],
+         [9.6940e-01, 1.9388e+00],
+         [9.1577e-01, 1.8315e+00],
+         [8.3717e-01, 1.6743e+00],
+         [7.3572e-01, 1.4714e+00],
+         [6.1421e-01, 1.2284e+00],
+         [4.7595e-01, 9.5189e-01],
+         [3.2470e-01, 6.4940e-01],
+         [1.6459e-01, 3.2919e-01],
+         [1.2246e-16, 2.4493e-16]]])
+Input size:  torch.Size([1, 20, 2])
+Output size:  torch.Size([20, 1])
+Hidden state size:  torch.Size([2, 1, 10])
